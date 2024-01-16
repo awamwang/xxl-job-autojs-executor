@@ -1,0 +1,5 @@
+/logs
+/node_modules
+/config/*.json
+/dist
+/.vscode/sftp.json

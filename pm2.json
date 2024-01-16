@@ -1,0 +1,20 @@
+{
+  "apps": {
+    "name": "xxl-job-autojs-executor",
+    "script": "node",
+    "exec_mode": "fork",
+    "error_file": "../pmlog/autojs/err.log",
+    "out_file": "../pmlog/autojs/out.log",
+    "merge_logs": true,
+    "log_date_format": "YYYY/MM/DD HH:mm:ss",
+    "min_uptime": "60s",
+    "max_restarts": 5,
+    "autorestart": true,
+    "restart_delay": "60",
+    "instance": "1",
+    "args": [
+      "dist/index.js"
+    ],
+    "env": {}
+  }
+}

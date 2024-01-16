@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "target": "ES6",
+    "module": "CommonJS",
+    "sourceMap": false,
+    "forceConsistentCasingInFileNames": true
+  }
+}
