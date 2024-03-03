@@ -109,7 +109,7 @@ export class DeviceManager {
           } else if (message.type === "ping") {
             this.clientPingListener(client, message.data);
           } else if (message.type === "status") {
-            client.emit("script:status", message.data);
+            client.emitter?.emit("script:status", message.data);
           }
         }
       }

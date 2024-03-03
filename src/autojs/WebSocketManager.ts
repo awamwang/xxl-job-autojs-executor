@@ -23,6 +23,7 @@ export interface WebSocketExt extends websocket.connection {
   type: "device" | "admin";
   name: string;
   extData?: any;
+  emitter?: EventEmitter;
   vscodeConnection?: websocket.connection;
 }
 export type IClientRequestListener = (
@@ -150,6 +151,7 @@ export class WebSocketManager extends EventEmitter {
     req: http.IncomingMessage
   ) {
     client.ip = ipFromWebSocket(client, req);
+    client.emitter = new EventEmitter();
 
     logger.debug(
       "WebSocket.Server connection client ip -> " +
@@ -184,7 +186,6 @@ export class WebSocketManager extends EventEmitter {
     client.addListener("message", (message: websocket.Message) => {
       const json = parseMessage(message);
       logger.debug(`on client message: ${JSON.stringify(json)}`);
-
       if (json.type === "respond") {
         const answer = messageAnswer.get(json.message_id);
         answer && answer(null, json);
@@ -192,7 +193,8 @@ export class WebSocketManager extends EventEmitter {
         deviceLogListeners.forEach((listener) => {
           listener(client, json);
         });
-        client.emit("script:log", json);
+        // client.emit("script:log", json);
+        client.emitter?.emit("script:log", json);
       } else {
         clientMessageListeners.forEach(async (listener) => {
           await listener(client, json);
