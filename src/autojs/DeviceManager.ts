@@ -121,6 +121,7 @@ export class DeviceManager {
       .getClients("device")
       .filter((c) => c.extData);
 
+    // console.log("onlineClients", onlineClients.map(c => c.extData?.name))
     if (!noError && onlineClients.length === 0) {
       throw new Error("没有在线设备");
     }
@@ -191,7 +192,7 @@ export class DeviceManager {
     WebSocketManager.getInstance()
       .getClients()
       .forEach((c) => {
-        if (c.type === "device" && c.extData.name === name) {
+        if (c.type === "device" && c.extData?.name === name) {
           c.drop();
         }
       });

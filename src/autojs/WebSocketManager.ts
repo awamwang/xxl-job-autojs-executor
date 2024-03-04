@@ -5,6 +5,7 @@ import * as websocket from "websocket";
 import { createXxlJobLogger } from "../utils/logger";
 import { ipFromWebSocket } from "../utils/ip";
 import { parseMessage } from "../utils/websocket/message";
+import { Device } from "./DeviceManager";
 import { Buffer } from "buffer";
 
 const { logger } = createXxlJobLogger("WebSocketManager");
@@ -17,18 +18,19 @@ const clientConfig = {};
 // logger.info('extra client config ->', clientConfig);
 
 export type WebSocketData = any;
+export interface ConnectionDeviceInfo {}
 export interface WebSocketExt extends websocket.connection {
   isAlive: boolean;
   ip: string;
   type: "device" | "admin";
   name: string;
-  extData?: any;
+  extData?: Device;
   emitter?: EventEmitter;
   vscodeConnection?: websocket.connection;
 }
 export type IClientRequestListener = (
   req: http.IncomingMessage
-) => Promise<{ type: string | null; extData?: any }>;
+) => Promise<{ type: string | null; extData?: Device }>;
 export type IClientMessageListener = (
   client: WebSocketExt,
   data: WebSocketData

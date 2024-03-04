@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch express",
+    "dev": "tsc watch express",
     "dev:xxl": "nodemon --delay 2s --watch ./src --watch ./node_modules/xxl-job -e ts,js,json,cjs,mjs --exec 'ts-node -P ./tsconfig.build.json -r tsconfig-paths/register' src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",

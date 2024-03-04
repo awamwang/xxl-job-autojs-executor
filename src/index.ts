@@ -5,11 +5,17 @@ import { createXxlJobExecutor } from "xxl-job-nodejs";
 
 import { createXxlJobLogger } from "./utils/logger";
 import startAutojs from "./autojs";
+import { WebSocketExt } from "./autojs/WebSocketManager";
 import ScriptExecutor from "./autojs/ScriptExecutor";
 
 const { logger } = createXxlJobLogger("app");
 
 const jobHandlers = new Map<string, JobHandler>();
+export interface jobInfo {
+  fileName: string;
+  client: WebSocketExt;
+}
+const jobInfos = new Map<number, jobInfo>();
 // jobHandlers.set("autojs_batch", async (jobLogger, jobRequest, jobParams) => {
 //   jobLogger.warn(
 //     `request: ${JSON.stringify(jobRequest)}, params: ${jobParams}`
@@ -36,6 +42,11 @@ jobHandlers.set("autojs", async (jobLogger, jobRequest, jobParams) => {
   jobLogger.warn(
     `request: ${JSON.stringify(jobRequest)}, params: ${jobParams}`
   );
+  const { jobId } = jobRequest;
+  if (!jobId) {
+    logger.warn("jobId is null");
+    return;
+  }
   if (!jobParams) {
     logger.warn("jobParams is null, not run autojs");
     return;
@@ -53,6 +64,7 @@ jobHandlers.set("autojs", async (jobLogger, jobRequest, jobParams) => {
   if (!client) {
     throw new Error("no online client, not run autojs");
   }
+  jobInfos.set(jobId, { fileName, client });
 
   // 拿到所有设备的 websocket
   // 等待所有 web socket on 执行结束
@@ -60,9 +72,9 @@ jobHandlers.set("autojs", async (jobLogger, jobRequest, jobParams) => {
     if (!client.emitter) jobLogger.error("client.emitter is null");
 
     function scriptLogListener(message: any) {
-      if (noLog) return
+      if (noLog) return;
 
-      const log = message.data.log
+      const log = message.data.log;
       // LIO-AN00-ScriptClient-11:30:58+405 [DEBUG] : clickUiObjectGone: 没有找到"textContains("看小视频再领").boundsInside(0, 0, 1176, 2400)"
       const logLevel = log.match(/\[(.*)\]/)?.[1];
       // console.log(logLevel, log)
@@ -79,27 +91,28 @@ jobHandlers.set("autojs", async (jobLogger, jobRequest, jobParams) => {
     }
     function scriptScriptListener(data: any) {
       // console.info('on script status', data)
-      logger.info(`on script status` + JSON.stringify(data));
+      logger.info(`on script status ${JSON.stringify(data)}`);
       if (data.status === "destroy") {
-        clearListener();
+        clearContext();
         resolve(data);
       }
     }
-    function clearListener() {
-      console.info("clear listener");
+    function clearContext() {
+      logger.info("clear listener");
+      jobInfos.delete(jobId);
       client.emitter?.off("script:log", scriptLogListener);
       client.emitter?.off("script:status", scriptScriptListener);
     }
 
     client.emitter?.on("script:log", scriptLogListener);
     client.emitter?.on("script:status", scriptScriptListener);
-    client.on("close", clearListener);
-    client.on("error", clearListener);
-    console.info(`start script`);
+    client.on("close", clearContext);
+    client.on("error", clearContext);
+    logger.info(`start script`);
 
     // setTimeout(() => {
     //   jobLogger.error("autojs执行超时");
-    //   clearListener();
+    //   clearContext();
     //   resolve({ status: "timeout" });
     // }, 10000);
   });
@@ -130,7 +143,20 @@ const server = app.listen(port, () => {
     ...executorConfig,
   });
   xxlJobExecutor.initialization();
+
+  xxlJobExecutor.eventEmitter.on("jobKilled", (job: any) => {
+    try {
+      const { fileName, client } = jobInfos.get(job.id) || {};
+
+      if (fileName && client?.extData) {
+        autojsServer.stop(client.extData.name, fileName);
+        logger.info(`jobKilled ${job.id} -> ${JSON.stringify(client.extData)}`);
+      } else {
+        logger.warn(`job kill with wrong info: ${JSON.stringify(job)}`);
+      }
+    } catch (error) {
+      logger.error("job kill error", error);
+    }
+  });
 });
 let autojsServer: ScriptExecutor = startAutojs(server);
-
-
